@@ -10,6 +10,22 @@
       <h1>'<span data-bind="text: dirName"></span>' is not a repository</h1>
       <p>There is no repository at the selected path.</p>
       <div class="row">
+        <div class="col-lg-12">
+          <div class="panel panel-default">
+            <div class="panel-heading">Directories</div>
+            <div class="panel-body">
+							<table data-bind="foreach: directories" style="width:100%">
+								<tr style="border-bottom: 1px solid white">
+									<td><a class="directory" data-bind="text: directory, click: $root.selectDirectory"></a></td>
+									<td class="branch" data-bind="text: branch()"></td>
+									<td class="ahead"><span data-bind="visible: isAhead()"><span data-bind="text: ahead()"></span> ahead</span></td>
+									<td class="behind"><span data-bind="visible: isBehind()"><span data-bind="text: behind()"></span> behind</span></td>
+									<td class="status" data-bind="text: status()"></td>
+								</tr>
+							</table>
+          </div>
+          </div>
+        </div>
         <div class="col-lg-6">
           <div class="panel panel-default">
             <div class="panel-heading">Create a new repository</div>

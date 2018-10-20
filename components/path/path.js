@@ -31,6 +31,7 @@ class PathViewModel {
     this.cloneDestination = ko.observable();
     this.repository = ko.observable();
     this.isRecursiveSubmodule = ko.observable(true);
+		this.directories = ko.observableArray();
   }
 
   updateNode(parentElement) {
@@ -56,6 +57,64 @@ class PathViewModel {
         } else if (status.type == 'uninited' || status.type == 'no-such-path') {
           this.status(status.type);
           this.repository(null);
+					let promise = this.server.getPromise('/fs/listDirectories', {term: this.repoPath()}).then((directoryList) => {
+          	const currentDir = directoryList.shift();
+						let dirs = this.directories();
+						let equals = (directoryList, i, d) => d.fullPath === directoryList[i];
+						for (let i = 0; i < directoryList.length; i++) {
+							if (!dirs.find(equals.bind(this, directoryList, i))) {
+								let directory = directoryList[i].replace(currentDir + '/', '');
+								dirs.push({
+									fullPath: directoryList[i],
+									directory: directory,
+									branch: ko.observable(''),
+									isAhead: ko.observable(false),
+									ahead: ko.observable(0),
+									isBehind: ko.observable(false),
+									behind: ko.observable(0),
+									status: ko.observable('')
+								});
+							}
+						}
+						this.directories(dirs);
+						let fetch = (dir) => this.server.postPromise('/fetch', { path: dir.fullPath, remote: 'origin' });
+						let status = (dir) => this.server.getPromise('/status', { path: dir.fullPath, fileLimit: 100 }).catch(e => ({error: e.error}));
+						let update = (dir, status) => {
+							let conflict = 0;
+							let isNew = 0;
+							let removed = 0;
+							let renamed = 0;
+							let staged = 0;
+							let modified = 0;
+							for (let filename in status.files) {
+								let file = status.files[filename];
+								if (file.conflict) conflict++;
+								if (file.isNew) isNew++;
+								if (file.removed) removed++;
+								if (file.renamed) renamed++;
+								if (file.staged) staged++;
+								if (!file.conflict && !file.isNew && !file.removed && !file.renamed && !file.staged) modified++;
+							}
+							let statii = [];
+							if (conflict) statii.push(conflict + ' conflicted');
+							if (isNew) statii.push(isNew + ' new');
+							if (removed) statii.push(removed + ' removed');
+							if (renamed) statii.push(renamed + ' renamed');
+							if (staged) statii.push(staged + ' staged');
+							if (modified) statii.push(modified + ' modified');
+							dir.branch(status.branch);
+							dir.ahead(status.ahead);
+							dir.isAhead(status.ahead > 0);
+							dir.behind(status.behind);
+							dir.isBehind(status.behind > 0);
+							dir.status(statii.join(', ') || 'no changes');
+						};
+						for (let dir of dirs) {
+							promise.then(fetch.bind(this, dir))
+								.then(status.bind(this, dir))
+					    	.then(update.bind(this, dir));
+						}
+					});
         }
         return null;
       }).catch((err) => { })
@@ -71,6 +130,9 @@ class PathViewModel {
 
     if (this.repository()) this.repository().onProgramEvent(event);
   }
+	selectDirectory(directory) {
+    navigation.browseTo(`repository?path=${encodeURIComponent(directory.fullPath)}`);		
+	}
   cloneRepository() {
     this.status('cloning');
     const dest = this.cloneDestination() || this.cloneDestinationImplicit();

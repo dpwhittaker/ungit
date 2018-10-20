@@ -24,7 +24,7 @@ module.exports = (grunt) => {
     },
     watch: {
       scripts: {
-        files: ['public/source/**/*.js', 'source/**/*.js', 'components/**/*.js'],
+        files: ['public/source/**/*.js', 'source/**/*.js', 'components/**/*.js', 'components/**/*.html'],
         tasks: ['browserify-common', 'browserify-components', 'babel:prod'],
         options: {
           spawn: false,

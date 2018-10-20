@@ -24,9 +24,15 @@ exports.parseGitStatus = (text, args) => {
     };
   });
 
+	let ahead = /ahead ([0-9]+)/.exec(lines[0]);
+	ahead = ahead ? +ahead[1] : 0;
+	let behind = /behind ([0-9]+)/.exec(lines[0]);
+	behind = behind ? +behind[1] : 0;
   return {
     isMoreToLoad: false,
-    branch: lines[0].split(' ').pop(),
+    branch: lines[0].split(' ')[1],
+		ahead: ahead,
+		behind: behind,
     inited: true,
     files: files
   };
